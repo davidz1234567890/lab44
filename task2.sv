@@ -6,7 +6,7 @@ module task5 (
 output logic [1:0] credit,
 output logic drop,
 input logic coinInserted, //new output logic
-input logic coin[1:0], //changed slightly
+input logic [1:0] coin, //changed slightly
 input logic clock, reset);
 enum logic [3:0] {nothing = 4'b0000,
                   credit1_nosoda = 4'b0001,
@@ -32,7 +32,7 @@ enum logic [3:0] {nothing = 4'b0000,
 always_comb begin
   case(currState)
     nothing: begin
-      if(coin == 2'b01 && coinInserted == 1'b1) begin
+      if((coin[1:0] == 2'b01) && (coinInserted == 1'b1)) begin  //new comment
         nextState = credit1_nosoda_wait;
       end
       else if(coin == 2'b10 && coinInserted == 1'b1) begin
@@ -339,7 +339,8 @@ endmodule: task5
 module loading_master_fsm(input logic correct_location,
                           input logic win,
                           input logic endgame,
-                          output logic enable, clear);
+                          output logic enable, clear,
+                          input logic reset, clock);
     enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
 
     
@@ -375,8 +376,8 @@ module game_control_fsm(input logic win,
                         output logic round_enable,
                         output logic round_clear,
                         input logic clock, reset);
-enum logic [1:0] {nothing = 2'b00, play = 2'b01, wait = 2'b10}
-                  currState, nextState;
+enum logic [1:0] {nothing = 2'b00, play = 2'b01, waitt = 2'b10} 
+                                                  currState, nextState;
 always_comb begin
     case(currState)
       nothing: begin
@@ -400,14 +401,14 @@ always_comb begin
 
         end
         else begin //here ~end_game && ~win && ~gradeit
-          nextState = wait;
+          nextState = waitt;
           round_enable = 1'b0;
           round_clear = 1'b0;
         end
 
       end
 
-      wait: begin
+      waitt: begin
         if(end_game | win) begin
           nextState = nothing;
           round_enable = 1'b0;
@@ -421,21 +422,21 @@ always_comb begin
 
         end
         else begin //here ~end_game && ~win && ~gradeit
-          nextState = wait;
+          nextState = waitt;
           round_enable = 1'b0;
           round_clear = 1'b0;
         end
 
       end
     endcase
-
+end
 always_ff @(posedge clock, posedge reset)
         if(reset)
             currState <= nothing;
         else
             currState <= nextState;
 
-end
+
 
 
 
@@ -461,20 +462,20 @@ module task2(input logic coinInserted,
     .coin(coinValue),.clock, .reset);
 
     logic Num_games_available_en;
-    
-    Counter #(3) game_counter(.en(game_paid_for && ~numGames_eq_0), 
+    logic AltB, numGames_eq_0, AgtB;
+    Counter #(4) game_counter(.en(game_paid_for && ~numGames_eq_0), 
                       .clear(1'b0), 
                       .load(loadnumGames), 
                       .up(1'b0), 
-                      .D(3'd7), 
+                      .D(4'd7), 
                       .clock, 
                       .Q(numGames));
-    logic AltB, numGames_eq_0, AgtB;
-    Comparator #(3) check_available_games_gt_0(.A(numGames), .B(3'd0),
+    //add comment
+    MagComp #(4) check_available_games_gt_0(.A(numGames), .B(4'd0),
                                    .AltB, .AeqB(numGames_eq_0), .AgtB);
     
     logic numGames_lt_7, AeqB_second_comparator, AgtB_second_comparator;
-    Comparator #(3) check_available_games_lt_7(.A(numGames), .B(3'd7),
+    MagComp #(4) check_available_games_lt_7(.A(numGames), .B(4'd7),
                                     .AltB(numGames_lt_7),
                                     .AeqB(AeqB_second_comparator),
                                     .AgtB(AgtB_second_comparator));
@@ -482,7 +483,7 @@ module task2(input logic coinInserted,
     logic game_can_start, cannot_start;
     assign game_can_start = numGames_lt_7 && startGame && ~cannot_start;
 
-    logic [3:0] roundcount, D_intermediate;
+    logic [3:0] roundCount, D_intermediate;
     logic Round_en, Round_cl;
 
     Counter #(4) round_counter(.en(Round_en), 
@@ -561,30 +562,38 @@ module task2(input logic coinInserted,
 
 
 
-    loading_master_fsm load_master3(.correct_location(correct_location_3),
+    loading_master_fsm master_3(.correct_location(correct_location_3),
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master3), 
-                          .clear(clear_master3));
+                          .clear(clear_master3),
+                          .reset,
+                          .clock);
 
-    loading_master_fsm load_master2(.correct_location(correct_location_2),
+    loading_master_fsm master_2(.correct_location(correct_location_2),
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master2), 
-                          .clear(clear_master2));
+                          .clear(clear_master2),
+                          .reset,
+                          .clock);
     
 
-    loading_master_fsm load_master1(.correct_location(correct_location_1),
+    loading_master_fsm master_1(.correct_location(correct_location_1),
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master1), 
-                          .clear(clear_master1));
+                          .clear(clear_master1),
+                          .reset,
+                          .clock);
     
-    loading_master_fsm load_master0(.correct_location(correct_location_0),
+    loading_master_fsm master_0(.correct_location(correct_location_0),
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master0), 
-                          .clear(clear_master0));
+                          .clear(clear_master0),
+                          .reset,
+                          .clock);
 
     logic [11:0] MasterPattern;
     assign MasterPattern = (master3_bit_pattern << 9) | 
@@ -610,7 +619,7 @@ module task2(input logic coinInserted,
                                   .Zood);
 
 
-    game_control_fsm(.win(GameWon),
+    game_control_fsm game_control(.win(GameWon),
                      .end_game(GameOver),
                      .gradeit(GradeIt),
                      .game_can_start(game_can_start),

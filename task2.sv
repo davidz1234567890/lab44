@@ -520,7 +520,7 @@ always_comb begin
         end
         else if (~end_game && ~win && gradeit) begin
           nextState = play;
-          round_enable = 1'b1;
+          round_enable = 1'b0;
           round_clear = 1'b0;
 
         end
@@ -604,9 +604,10 @@ module task2(input logic coinInserted,
                                     .AltB(numGames_lt_7),
                                     .AeqB(AeqB_second_comparator),
                                     .AgtB(AgtB_second_comparator));
-
+    
     logic game_can_start, cannot_start;
-    assign game_can_start = numGames_lt_7 && startGame && ~cannot_start;
+    assign game_can_start = numGames_lt_7 && startGame && ~cannot_start
+                            && game_paid_for;
 
     logic [3:0] D_intermediate;
     logic Round_en, Round_cl;
@@ -820,9 +821,13 @@ task2 DUTT(.*);
     @(posedge clock);
     startGame <= 1;
     @(posedge clock);
-    
+    startGame <= 0;
     @(posedge clock);
     GradeIt <= 1;
+    
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
     @(posedge clock);
     GradeIt <= 0;
     @(posedge clock);
@@ -832,21 +837,103 @@ task2 DUTT(.*);
     @(posedge clock);
     GradeIt <= 1;
     @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
     GradeIt <= 0;
     @(posedge clock);
     @(posedge clock);
     @(posedge clock);
+    //Guess is IICC
+    GuessPattern <= 12'b101_101_010_010;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //Guess is IOTZ
+    GuessPattern <= 12'b101_011_001_110;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //guess is TIZD
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //guess is IZDT
+    //GuessPattern <= 12'b101_110_100_001;
+
+    //tizd
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+
+    //GuessPattern <= 12'b001_101_110_100;
+    //guess is IZDT
+    GuessPattern <= 12'b101_110_100_001;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
     @(posedge clock);
 
 
 
-
-
-
-
-
-
-
+    //new game
+    startGame <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
 
     $finish;
     end

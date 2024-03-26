@@ -104,11 +104,20 @@ module task1(input logic [11:0] Guess_actual, Master,
 
     logic [3:0] match_3, match_2, match_1, match_0;//, min_I, min_Z;
     //logic [3:0] Znarly, Zood;
-    assign Znarly = (Master[11:9] == Guess[11:9]) +
+    assign Znarly = ((Master[11:9] != 3'd0) &&
+                    (Master[8:6] != 3'd0) &&
+                    (Master[5:3] != 3'd0) &&
+                    (Master[2:0] != 3'd0) ) ?
+                    ((Master[11:9] == Guess[11:9]) +
                     (Master[8:6] == Guess[8:6]) +
                     (Master[5:3] == Guess[5:3]) + 
-                    (Master[2:0] == Guess[2:0]);
-    assign Zood = (min_T + min_C + min_O + min_D + min_I + min_Z) - Znarly;
+                    (Master[2:0] == Guess[2:0])) : 4'b0;
+    assign Zood = ((Master[11:9] != 3'd0) &&
+                    (Master[8:6] != 3'd0) &&
+                    (Master[5:3] != 3'd0) &&
+                    (Master[2:0] != 3'd0) ) ?
+                    ((min_T + min_C + min_O + min_D + min_I + min_Z) - Znarly)
+                    : 4'b0;
 
 
     

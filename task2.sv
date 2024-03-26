@@ -604,10 +604,21 @@ module task2(input logic coinInserted,
                                     .AltB(numGames_lt_7),
                                     .AeqB(AeqB_second_comparator),
                                     .AgtB(AgtB_second_comparator));
-    
+    logic [3:0] num_games_can_be_played;
+    //ask about paying for up to 7 available games
+
     logic game_can_start, cannot_start;
     assign game_can_start = numGames_lt_7 && startGame && ~cannot_start
-                            && game_paid_for;
+                            && (num_games_can_be_played > 0);
+
+
+    Counter #(4) games_payed_counter(.en(game_paid_for || game_can_start), 
+                      .clear(1'b0), 
+                      .load(reset), 
+                      .up(game_paid_for), 
+                      .D(4'd0), 
+                      .clock, 
+                      .Q(num_games_can_be_played));
 
     logic [3:0] D_intermediate;
     logic Round_en, Round_cl;
@@ -801,6 +812,7 @@ task2 DUTT(.*);
     GradeIt <= 0;
     @(posedge clock);
     reset <= 0;
+    
     LoadShape <= 3'b101;
     ShapeLocation <= 2'b11;
     @(posedge clock);
@@ -809,6 +821,8 @@ task2 DUTT(.*);
     LoadShape <= 3'b110;
     ShapeLocation <= 2'b10;
     @(posedge clock);
+
+    coinValue <= 2'b00;
     startGame <= 1;
     @(posedge clock);
     LoadShape <= 3'b100;
@@ -924,6 +938,123 @@ task2 DUTT(.*);
 
 
 
+    
+
+
+    coinValue <= 2'b10;//triangle
+    coinInserted <= 1'b1;
+    
+
+
+    GuessPattern <= 12'b001_001_010_010; //test case TTCC
+    startGame <= 1;
+    @(posedge clock);
+    
+    coinValue <= 2'b00;
+    @(posedge clock);
+    GradeIt <= 1;
+    startGame <= 0;
+    coinValue <= 2'b00;
+
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    //Guess is O O D D below
+    GuessPattern <= 12'b011_011_100_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //Guess is IICC
+    GuessPattern <= 12'b101_101_010_010;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //Guess is IOTZ
+    GuessPattern <= 12'b101_011_001_110;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //guess is TIZD
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    //guess is IZDT
+    //GuessPattern <= 12'b101_110_100_001;
+
+    //tizd
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+
+    GuessPattern <= 12'b001_101_110_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+
+    //GuessPattern <= 12'b001_101_110_100;
+    //guess is IZDT
+    GuessPattern <= 12'b101_110_100_001;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+
+
+
     //new game
     startGame <= 1;
     @(posedge clock);
@@ -935,9 +1066,7 @@ task2 DUTT(.*);
     @(posedge clock);
     @(posedge clock);
 
+
     $finish;
     end
-
-
-
 endmodule: task2_test

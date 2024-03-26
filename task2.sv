@@ -589,7 +589,8 @@ module task2(input logic coinInserted,
     logic AltB, numGames_eq_0, AgtB;
     Counter #(4) game_counter(.en(game_paid_for && ~numGames_eq_0), 
                       .clear(1'b0), 
-                      .load(reset),  //resets to 7 available games
+                      .load(reset || numGames_eq_0),  
+                      //resets to seven available games
                       .up(1'b0), 
                       .D(4'd7), 
                       .clock, 
@@ -599,16 +600,16 @@ module task2(input logic coinInserted,
     MagComp #(4) check_available_games_gt_0(.A(numGames), .B(4'd0),
                                    .AltB, .AeqB(numGames_eq_0), .AgtB);
     
-    logic numGames_lt_7, AeqB_second_comparator, AgtB_second_comparator;
-    MagComp #(4) check_available_games_lt_7(.A(numGames), .B(4'd7),
-                                    .AltB(numGames_lt_7),
+    logic numGames_lt_seven, AeqB_second_comparator, AgtB_second_comparator;
+    MagComp #(4) check_available_games_lt_seven(.A(numGames), .B(4'd7),
+                                    .AltB(numGames_lt_seven),
                                     .AeqB(AeqB_second_comparator),
                                     .AgtB(AgtB_second_comparator));
     logic [3:0] num_games_can_be_played;
-    //ask about paying for up to 7 available games
+    //ask about paying for up to seven available games
 
     logic game_can_start, cannot_start;
-    assign game_can_start = numGames_lt_7 && startGame && ~cannot_start
+    assign game_can_start = numGames_lt_seven && startGame && ~cannot_start
                             && (num_games_can_be_played > 0);
 
 
@@ -943,7 +944,7 @@ task2 DUTT(.*);
 
     coinValue <= 2'b10;//triangle
     coinInserted <= 1'b1;
-    
+    //next game
 
 
     GuessPattern <= 12'b001_001_010_010; //test case TTCC
@@ -1054,12 +1055,16 @@ task2 DUTT(.*);
     @(posedge clock);
 
 
-
-    //new game
+    coinValue <= 2'b11;//triangle
+    coinInserted <= 1'b1;
+    //new game , should not be played
     startGame <= 1;
     @(posedge clock);
+    
     @(posedge clock);
+    startGame <= 0;
     @(posedge clock);
+    coinValue <= 2'b00;
     GradeIt <= 1;
     @(posedge clock);
     GradeIt <= 0;

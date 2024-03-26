@@ -32,7 +32,7 @@ enum logic [3:0] {nothing = 4'b0000,
 always_comb begin
   case(currState)
     nothing: begin
-      if((coin[1:0] == 2'b01) && (coinInserted == 1'b1)) begin  //new comment
+      if((coin == 2'b01) && (coinInserted == 1'b1)) begin  //new comment
         nextState = credit1_nosoda_wait;
       end
       else if(coin == 2'b10 && coinInserted == 1'b1) begin
@@ -153,7 +153,7 @@ always_comb begin
 
     nothing_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin //exits waiting state if coinInserted
+          && coinInserted == 1'b1) begin //exits waiting state if coinInserted
                                          // == 0
         nextState = nothing_wait;
       end
@@ -164,7 +164,7 @@ always_comb begin
 
     credit1_nosoda_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit1_nosoda_wait;
       end
       else begin
@@ -174,7 +174,7 @@ always_comb begin
 
     credit2_nosoda_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit2_nosoda_wait;
       end
       else begin
@@ -184,7 +184,7 @@ always_comb begin
 
     credit3_nosoda_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit3_nosoda_wait;
       end
       else begin
@@ -194,7 +194,7 @@ always_comb begin
 
     mult_of_4_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = mult_of_4_wait;
       end
       else begin
@@ -204,7 +204,7 @@ always_comb begin
 
     credit1_soda_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit1_soda_wait;
       end
       else begin
@@ -214,7 +214,7 @@ always_comb begin
 
     credit2_soda_wait: begin
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit2_soda_wait;
       end
       else begin
@@ -224,7 +224,7 @@ always_comb begin
 
     credit3_soda_wait: begin 
       if((coin == 2'b01 | coin == 2'b10  | coin == 2'b11)  
-          && coinInserted == 1'b0) begin
+          && coinInserted == 1'b1) begin
         nextState = credit3_soda_wait;
       end
       else begin
@@ -333,6 +333,7 @@ always_ff @(posedge clock)
   if (reset)
     currState <= nothing; 
   else
+    
     currState <= nextState;
 endmodule: task5
 
@@ -446,8 +447,8 @@ module task2(input logic coinInserted,
              input logic [1:0] coinValue,
              output logic [3:0] numGames, RoundNumber,
              input logic startGame,
-             input logic loadnumGames,
-             input logic loadGuess,
+             //input logic loadnumGames,
+             //input logic loadGuess,
              //input logic [11:0] MasterPattern, //ask in oh
              input logic [11:0] GuessPattern,
              input logic [2:0] LoadShape, 
@@ -465,12 +466,13 @@ module task2(input logic coinInserted,
     logic AltB, numGames_eq_0, AgtB;
     Counter #(4) game_counter(.en(game_paid_for && ~numGames_eq_0), 
                       .clear(1'b0), 
-                      .load(loadnumGames), 
+                      .load(reset),  //resets to 7 available games
                       .up(1'b0), 
                       .D(4'd7), 
                       .clock, 
                       .Q(numGames));
     //add comment
+    
     MagComp #(4) check_available_games_gt_0(.A(numGames), .B(4'd0),
                                    .AltB, .AeqB(numGames_eq_0), .AgtB);
     
@@ -503,28 +505,28 @@ module task2(input logic coinInserted,
     //loading in master
     logic en_master3, clear_master3;
     logic [2:0] master3_bit_pattern;
-    Register #(3) load_master3(.D(LoadShape), .en(en_master3), 
+    Register #(3) load_master3(.D(LoadShape), .en(en_master3 && LoadShapeNow), 
                                .clear(clear_master3), .clock,
                                .Q(master3_bit_pattern));
-
+    
     logic en_master2, clear_master2;
     logic [2:0] master2_bit_pattern;
-    Register #(3) load_master2(.D(LoadShape), .en(en_master2), 
+    Register #(3) load_master2(.D(LoadShape), .en(en_master2 && LoadShapeNow), 
                                .clear(clear_master2), .clock,
                                .Q(master2_bit_pattern));
     
     logic en_master1, clear_master1;
     logic [2:0] master1_bit_pattern;
-    Register #(3) load_master1(.D(LoadShape), .en(en_master1), 
+    Register #(3) load_master1(.D(LoadShape), .en(en_master1 && LoadShapeNow), 
                                .clear(clear_master1), .clock,
                                .Q(master1_bit_pattern));
-    
+   
     logic en_master0, clear_master0;
     logic [2:0] master0_bit_pattern;
-    Register #(3) load_master0(.D(LoadShape), .en(en_master0), 
+    Register #(3) load_master0(.D(LoadShape), .en(en_master0 && LoadShapeNow), 
                                .clear(clear_master0), .clock,
                                .Q(master0_bit_pattern));
-    
+   
     logic correct_location_3, correct_location_2, 
           correct_location_1, correct_location_0;
     
@@ -629,3 +631,92 @@ module task2(input logic coinInserted,
                      .reset);
 endmodule: task2
 
+module task2_test;
+logic coinInserted; //input
+logic [1:0] coinValue;  //input
+logic [3:0] numGames, RoundNumber;  //output
+logic startGame; //input
+//logic loadGuess;//input
+
+logic [11:0] GuessPattern;//input
+logic [2:0] LoadShape; //input
+logic [1:0] ShapeLocation; //input
+logic LoadShapeNow; //input
+logic GameWon;//output
+logic GameOver;//output
+logic clock, reset, GradeIt; //input
+
+task2 DUTT(.*);
+
+
+
+
+
+
+
+
+
+
+
+
+    initial begin
+      clock = 0;
+      
+      forever #5 clock = ~clock;
+      
+      
+    end
+    
+
+    initial begin 
+    GuessPattern <= 12'b001_001_010_010;
+    coinValue <= 2'b11;
+    coinInserted <= 1'b1;
+    LoadShapeNow <= 1'b1;
+    reset = 1;
+    @(posedge clock);
+    reset <= 0;
+    LoadShape <= 3'b101;
+    ShapeLocation <= 2'b11;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b110;
+    ShapeLocation <= 2'b10;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b100;
+    ShapeLocation <= 2'b01;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b001;
+    ShapeLocation <= 2'b00;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    
+
+
+
+
+
+
+
+
+
+
+
+    $finish;
+    end
+
+
+
+endmodule: task2_test

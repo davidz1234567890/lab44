@@ -250,34 +250,157 @@ end
 always_comb begin
     credit = 2'b00; drop = 1'b0;
     case (currState)
-      nothing: credit = 2'b00;
-      credit1_nosoda: begin
+      nothing: begin
+        if(coin == 2'b01) begin //circle
+          credit = 2'b01;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b11;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b01;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b00;
+          drop = 1'b0;
 
-        credit = 2'b01;
+        end
+      end
+      credit1_nosoda: begin
+        if(coin == 2'b01) begin //circle
+          credit = 2'b10;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b10;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b01;
+          drop = 1'b0;
+
+        end
       end
       credit2_nosoda: begin
+        if(coin == 2'b01) begin //circle
+          credit = 2'b11;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b01;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b11;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b10;
+          drop = 1'b0;
 
-        credit = 2'b10;
+        end
       end
       credit3_nosoda: begin
+        if(coin == 2'b01) begin //circle
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b10;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b11;
+          drop = 1'b0;
 
-        credit = 2'b11;
+        end
       end
       mult_of_4: begin
-        drop = 1'b1;
-        credit = 2'b00;
+        if(coin == 2'b01) begin //circle
+          credit = 2'b01;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b11;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b01;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b00;
+          drop = 1'b0;
+
+        end
       end
       credit1_soda: begin
-        drop = 1'b1;
-        credit = 2'b01;
+        if(coin == 2'b01) begin //circle
+          credit = 2'b10;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b10;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b01;
+          drop = 1'b0;
+
+        end
       end
       credit2_soda: begin
-        drop = 1'b1;
-        credit = 2'b10;
+        if(coin == 2'b01) begin //circle
+          credit = 2'b11;
+          drop = 1'b0;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b01;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b11;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b10;
+          drop = 1'b0;
+
+        end
       end
       credit3_soda: begin
-        drop = 1'b1;
-        credit = 2'b11;
+        if(coin == 2'b01) begin //circle
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b10) begin //triangle
+          credit = 2'b10;
+          drop = 1'b1;
+        end
+        else if (coin == 2'b11) begin //pentagon
+          credit = 2'b00;
+          drop = 1'b1;
+        end
+        else begin //invalid coin
+          credit = 2'b11;
+          drop = 1'b0;
+
+        end
       end
       nothing_wait: begin
         credit = 2'b00;
@@ -300,22 +423,22 @@ always_comb begin
 
       end
       mult_of_4_wait: begin
-        drop = 1'b1;
+        drop = 1'b0;
         credit = 2'b00;
 
       end
       credit1_soda_wait: begin
-        drop = 1'b1;
+        drop = 1'b0;
         credit = 2'b01;
  
       end
       credit2_soda_wait: begin
-        drop = 1'b1;
+        drop = 1'b0;
         credit = 2'b10;
 
       end
       credit3_soda_wait: begin
-        drop = 1'b1;
+        drop = 1'b0;
         credit = 2'b11;
 
       end
@@ -462,7 +585,7 @@ module task2(input logic coinInserted,
     task5 task5_dut(.credit,.drop(game_paid_for),.coinInserted,
     .coin(coinValue),.clock, .reset);
 
-    logic Num_games_available_en;
+    
     logic AltB, numGames_eq_0, AgtB;
     Counter #(4) game_counter(.en(game_paid_for && ~numGames_eq_0), 
                       .clear(1'b0), 
@@ -485,7 +608,7 @@ module task2(input logic coinInserted,
     logic game_can_start, cannot_start;
     assign game_can_start = numGames_lt_7 && startGame && ~cannot_start;
 
-    logic [3:0] roundCount, D_intermediate;
+    logic [3:0] D_intermediate;
     logic Round_en, Round_cl;
 
     Counter #(4) round_counter(.en(Round_en), 
@@ -494,11 +617,11 @@ module task2(input logic coinInserted,
                       .up(1'b1), 
                       .D(D_intermediate), 
                       .clock, 
-                      .Q(roundCount));
+                      .Q(RoundNumber));
 
     logic [3:0] Znarly, Zood;
     Comparator #(4) determine_if_win(.A(Znarly), .B(4'd4), .AeqB(GameWon));
-    Comparator #(4) determine_end_game(.A(roundCount), .B(4'd8), 
+    Comparator #(4) determine_end_game(.A(RoundNumber), .B(4'd8), 
                                        .AeqB(GameOver));
     
 
@@ -669,11 +792,12 @@ task2 DUTT(.*);
     
 
     initial begin 
-    GuessPattern <= 12'b001_001_010_010;
+    GuessPattern <= 12'b001_001_010_010; //test case TTCC
     coinValue <= 2'b11;
     coinInserted <= 1'b1;
     LoadShapeNow <= 1'b1;
-    reset = 1;
+    reset <= 1;
+    GradeIt <= 0;
     @(posedge clock);
     reset <= 0;
     LoadShape <= 3'b101;
@@ -692,7 +816,7 @@ task2 DUTT(.*);
     startGame <= 1;
     @(posedge clock);
     LoadShape <= 3'b001;
-    ShapeLocation <= 2'b00;
+    ShapeLocation <= 2'b00; //Master is IZDT
     @(posedge clock);
     startGame <= 1;
     @(posedge clock);
@@ -700,9 +824,19 @@ task2 DUTT(.*);
     @(posedge clock);
     GradeIt <= 1;
     @(posedge clock);
+    GradeIt <= 0;
     @(posedge clock);
     @(posedge clock);
-    
+    //Guess is O O D D below
+    GuessPattern <= 12'b011_011_100_100;
+    @(posedge clock);
+    GradeIt <= 1;
+    @(posedge clock);
+    GradeIt <= 0;
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
+    @(posedge clock);
 
 
 

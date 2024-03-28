@@ -460,7 +460,9 @@ always_ff @(posedge clock)
     currState <= nextState;
 endmodule: task5
 
-module loading_master_fsm(input logic correct_location,
+module loading_master_fsm0(input logic correct_location,
+                          input logic LoadShapeNow,
+                                                                  input logic [1:0] ShapeLocation,
                           input logic win,
                           input logic endgame,
                           output logic enable, clear,
@@ -471,14 +473,20 @@ module loading_master_fsm(input logic correct_location,
     always_comb begin
         case(currState)
             nothing: begin
-                nextState = correct_location ? set : nothing;
-                enable = correct_location ? 1'b1 : 1'b0;
-                clear = correct_location ? 1'b0 : 1'b1;
+                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? set : nothing;
+                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? 1'b1 : 1'b0;
+                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? 1'b0 : 1'b1;
             end
+
+                                /*intermediate: begin
+                nextState = set;
+                enable = 1'b1;
+                clear = 1'b0;
+            end*/
 
             set: begin
                 nextState = (win | endgame) ? nothing : set;
-                enable = 1'b0;
+                enable = 1'b0; //changed from 0 to 1 for debugging purposes
                 clear = (win | endgame) ? 1'b1 : 1'b0;
             end
 
@@ -491,7 +499,137 @@ module loading_master_fsm(input logic correct_location,
         else
             currState <= nextState;
 
-endmodule: loading_master_fsm
+endmodule: loading_master_fsm0
+
+module loading_master_fsm1(input logic correct_location,
+                          input logic LoadShapeNow,
+                                                                  input logic [1:0] ShapeLocation,
+                          input logic win,
+                          input logic endgame,
+                          output logic enable, clear,
+                          input logic reset, clock);
+    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
+
+
+    always_comb begin
+        case(currState)
+            nothing: begin
+                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? set : nothing;
+                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? 1'b1 : 1'b0;
+                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? 1'b0 : 1'b1;
+            end
+
+                                /*intermediate: begin
+                nextState = set;
+                enable = 1'b1;
+                clear = 1'b0;
+            end*/
+
+            set: begin
+                nextState = (win | endgame) ? nothing : set;
+                enable = 1'b0; //changed from 0 to 1 for debugging purposes
+                clear = (win | endgame) ? 1'b1 : 1'b0;
+            end
+
+        endcase
+    end
+
+    always_ff @(posedge clock, posedge reset)
+        if(reset)
+            currState <= nothing;
+        else
+            currState <= nextState;
+
+endmodule: loading_master_fsm1
+
+module loading_master_fsm2(input logic correct_location,
+                          input logic LoadShapeNow,
+                                                                  input logic [1:0] ShapeLocation,
+                          input logic win,
+                          input logic endgame,
+                          output logic enable, clear,
+                          input logic reset, clock);
+    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
+
+
+    always_comb begin
+        case(currState)
+            nothing: begin
+                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? set : nothing;
+                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? 1'b1 : 1'b0;
+                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? 1'b0 : 1'b1;
+            end
+
+                                /*intermediate: begin
+                nextState = set;
+                enable = 1'b1;
+                clear = 1'b0;
+            end*/
+
+            set: begin
+                nextState = (win | endgame) ? nothing : set;
+                enable = 1'b0; //changed from 0 to 1 for debugging purposes
+                clear = (win | endgame) ? 1'b1 : 1'b0;
+            end
+
+        endcase
+    end
+
+    always_ff @(posedge clock, posedge reset)
+        if(reset)
+            currState <= nothing;
+        else
+            currState <= nextState;
+
+endmodule: loading_master_fsm2
+
+module loading_master_fsm3(input logic correct_location,
+                          input logic LoadShapeNow,
+                                                                  input logic [1:0] ShapeLocation,
+                          input logic win,
+                          input logic endgame,
+                          output logic enable, clear,
+                          input logic reset, clock);
+    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
+
+
+    always_comb begin
+        case(currState)
+            nothing: begin
+                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? set : nothing;
+                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? 1'b1 : 1'b0;
+                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? 1'b0 : 1'b1;
+            end
+
+                                /*intermediate: begin
+                nextState = set;
+                enable = 1'b1;
+                clear = 1'b0;
+            end*/
+
+            set: begin
+                nextState = (win | endgame) ? nothing : set;
+                enable = 1'b0; //changed from 0 to 1 for debugging purposes
+                clear = (win | endgame) ? 1'b1 : 1'b0;
+            end
+
+        endcase
+    end
+
+    always_ff @(posedge clock, posedge reset)
+        if(reset)
+            currState <= nothing;
+        else
+            currState <= nextState;
+
+endmodule: loading_master_fsm3
+
+
+
+
+
+
+
 
 module game_control_fsm(input logic win,
                         input logic end_game,
@@ -581,7 +719,9 @@ module task2(input logic coinInserted,
              output logic GameOver,
                                  output logic cannot_start,
              input logic clock, reset, GradeIt,
-                                 output logic en_master3, en_master2, en_master1, en_master0);
+                                 output logic en_master3, en_master2, en_master1, en_master0,
+                                 output logic correct_location_0, correct_location_1, correct_location_2, correct_location_3,
+                                 output logic [2:0] master0_bit_pattern, master1_bit_pattern, master2_bit_pattern, master3_bit_pattern);
     assign loadNumGames = 1'b1;
 
          logic [1:0] credit;
@@ -642,36 +782,96 @@ module task2(input logic coinInserted,
     Comparator #(4) determine_if_win(.A(Znarly), .B(4'd4), .AeqB(GameWon));
     /*Comparator #(4) determine_end_game(.A(RoundNumber), .B(4'd8),
                                        .AeqB(GameOver));*/
-        assign GameOver = ( startGame  && RoundNumber < 4'd8) ? 0 : 1;
+        //assign GameOver = ( ~cannot_start  && RoundNumber < 4'd8) ? 0 : 1;
+        always_comb begin
+          if(~game_can_start) begin
+            GameOver = 1'b0;
+          end
+          else begin
+            GameOver = (RoundNumber < 4'd8) ? 0 : 1;
+          end
+        end
 
 
     //loading in master
     logic clear_master3;
-    logic [2:0] master3_bit_pattern;
+    //logic [2:0] master3_bit_pattern;
     Register #(3) load_master3(.D(LoadShape), .en(en_master3 && LoadShapeNow),
                                .clear(clear_master3), .clock,
                                .Q(master3_bit_pattern));
 
     logic clear_master2;
-    logic [2:0] master2_bit_pattern;
+    //logic [2:0] master2_bit_pattern;
     Register #(3) load_master2(.D(LoadShape), .en(en_master2 && LoadShapeNow),
                                .clear(clear_master2), .clock,
                                .Q(master2_bit_pattern));
 
     logic clear_master1;
-    logic [2:0] master1_bit_pattern;
+    //logic [2:0] master1_bit_pattern;
     Register #(3) load_master1(.D(LoadShape), .en(en_master1 && LoadShapeNow),
                                .clear(clear_master1), .clock,
                                .Q(master1_bit_pattern));
 
     logic clear_master0;
-    logic [2:0] master0_bit_pattern;
+    //logic [2:0] master0_bit_pattern;
     Register #(3) load_master0(.D(LoadShape), .en(en_master0 && LoadShapeNow),
-                               .clear(clear_master0), .clock,
+                                .clear(clear_master0), .clock,
                                .Q(master0_bit_pattern));
 
-    logic correct_location_3, correct_location_2,
-          correct_location_1, correct_location_0;
+    //logic loaded3, loaded2, loaded1, loaded0;
+         /*always_comb begin
+           if(~loaded3 && LoadShapeNow && (ShapeLocation == 2'd3)) begin
+                  master3_bit_pattern = LoadShape;
+                  loaded3 = 1'b1;
+                end
+                else begin
+                  master3_bit_pattern = '0;
+                  loaded3 = 1'b0;
+                end
+
+
+
+         end
+
+         always_comb begin
+           if(~loaded2 && LoadShapeNow && (ShapeLocation == 2'd2)) begin
+                  master2_bit_pattern = LoadShape;
+                  loaded2 = 1'b1;
+                end
+
+                else begin
+                  master2_bit_pattern = '0;
+                  loaded2 = 1'b0;
+                end
+
+
+         end
+
+         always_comb begin
+           if(~loaded1 && LoadShapeNow && (ShapeLocation == 2'd1)) begin
+                  master1_bit_pattern = LoadShape;
+                  loaded1 = 1'b1;
+                end
+
+                else begin
+                  master1_bit_pattern = '0;
+                  loaded1 = 1'b0;
+                end
+         end
+
+         always_comb begin
+           if(~loaded0 && LoadShapeNow && (ShapeLocation == 2'd0)) begin
+                  master0_bit_pattern = LoadShape;
+                  loaded0 = 1'b1;
+                end
+                else begin
+                  master0_bit_pattern = '0;
+                  loaded0 = 1'b0;
+                end
+         end*/
+
+    /*logic correct_location_3, correct_location_2,
+          correct_location_1, correct_location_0;*/
 
     always_comb begin
       if(ShapeLocation == 2'd0) begin
@@ -713,7 +913,9 @@ module task2(input logic coinInserted,
 
 
 
-    loading_master_fsm master_3(.correct_location(correct_location_3),
+    loading_master_fsm3 master_3(.correct_location(correct_location_3),
+         .LoadShapeNow,
+                                                                   .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master3),
@@ -721,7 +923,9 @@ module task2(input logic coinInserted,
                           .reset,
                           .clock);
 
-    loading_master_fsm master_2(.correct_location(correct_location_2),
+    loading_master_fsm2 master_2(.correct_location(correct_location_2),
+         .LoadShapeNow,
+                                                                   .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master2),
@@ -730,7 +934,9 @@ module task2(input logic coinInserted,
                           .clock);
 
 
-    loading_master_fsm master_1(.correct_location(correct_location_1),
+    loading_master_fsm1 master_1(.correct_location(correct_location_1),
+         .LoadShapeNow,
+                                                                   .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master1),
@@ -738,7 +944,9 @@ module task2(input logic coinInserted,
                           .reset,
                           .clock);
 
-    loading_master_fsm master_0(.correct_location(correct_location_0),
+    loading_master_fsm0 master_0(.correct_location(correct_location_0),
+         .LoadShapeNow,
+                                                                   .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master0),
@@ -795,8 +1003,10 @@ logic loadNumGames, loadGuess;
 logic GameWon;//output
 logic GameOver;//output
 logic clock, reset, GradeIt; //input
+logic loaded3, loaded2, loaded1, loaded0;
 logic en_master3, en_master2, en_master1, en_master0;
-
+logic correct_location_0, correct_location_1, correct_location_2, correct_location_3;
+logic [2:0] master0_bit_pattern, master1_bit_pattern, master2_bit_pattern, master3_bit_pattern;
 task2 DUTT(.*);
 
 
@@ -824,7 +1034,7 @@ task2 DUTT(.*);
 
     LoadShapeNow <= 1'b1;
     reset <= 1;
-    GradeIt <= 1;
+    GradeIt <= 0;
     @(posedge clock);
          reset <= 0;
          coinValue <= 2'b11;

@@ -114,17 +114,7 @@ module chipInterface(input logic [17:0] SW,
 
 
         logic intermediate_key3;
-        /*always_comb begin
-          if ((~cannot_start) && (StartGame) && (numGames > 4'd0)) begin
-            GradeIt = intermediate_key3;
-                 LoadShapeNow = intermediate_key3;
-                end
-          else begin
-            LoadShapeNow = intermediate_key3;
-                 GradeIt = 0;
-           end
 
-        end*/
 
         logic CoinInserted, StartGame;
 
@@ -178,7 +168,19 @@ module chipInterface(input logic [17:0] SW,
 
 
           Synchronizer s3(.async(key3_not), .clock,
-    .sync(LoadShapeNow));
+    .sync(intermediate_key3));
+
+         always_comb begin
+          if ((~cannot_start)) begin // && (numGames > 4'd0)) begin
+            GradeIt = intermediate_key3;
+                 LoadShapeNow = 0;
+                end
+          else begin
+            LoadShapeNow = intermediate_key3;
+                 GradeIt = 0;
+           end
+
+        end
 
         //assign LoadShapeNow = 1'b1;
         assign LEDG[1] = displayMasterPattern;
@@ -188,7 +190,7 @@ module chipInterface(input logic [17:0] SW,
         //BCDtoSevenSegment bcdddd(.bcd(LoadShape), .segment(HEX4));
         BCDtoSevenSegment_2bitinput bcddd(.bcd(ShapeLocation), .segment(HEX5));
         logic cannot_start;
-        assign LEDG[3] = cannot_start;
+        assign LEDG[3] = GradeIt;
         assign LEDG[4] = correct_location_0;//en_master0;
         assign LEDG[5] = en_master1;
         logic GameOver;

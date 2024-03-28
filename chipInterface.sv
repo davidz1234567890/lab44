@@ -38,6 +38,26 @@ endmodule: BCDtoSevenSegment_2bitinput
 
 
 
+module BCDtoSevenSegment_3bitinput
+(input logic [2:0] bcd,
+output logic [6:0] segment);
+  always_comb
+    unique case (bcd)
+      3'b000: segment = ~(7'b011_1111);
+      3'd1: segment = ~(7'b000_0110);
+      3'd2: segment = ~(7'b101_1011);
+      3'd3: segment = ~(7'b100_1111);
+      4'd3: segment = ~(7'b100_1111);
+      3'd4: segment = ~(7'b110_0110);
+      3'd5: segment = ~(7'b110_1101);
+      3'd6: segment = ~(7'b111_1101);
+      3'd7: segment = ~(7'b000_0111);
+
+    endcase
+endmodule: BCDtoSevenSegment_3bitinput
+
+
+
 
 module chipInterface(input logic [17:0] SW,
                      output logic [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7,
@@ -70,7 +90,7 @@ module chipInterface(input logic [17:0] SW,
    logic displayMasterPattern;
    logic en_master3, en_master2, en_master1, en_master0;
 
-   assign displayMasterPattern = SW[15];
+   assign displayMasterPattern = 1'b1;
 
    mastermindVGA vga(.CLOCK_50(CLOCK_50),
              .VGA_R(VGA_R), .VGA_G(VGA_G), .VGA_B(VGA_B),
@@ -138,7 +158,7 @@ module chipInterface(input logic [17:0] SW,
    //assign debug = SW[15];
 
 
-        assign LEDG[6] = en_master2;
+        assign LEDG[6] = en_master0;
         assign LEDG[7] = en_master3;
         logic key0_not, key1_not, key2_not, key3_not;
         assign key0_not = ~KEY[0];
@@ -161,18 +181,18 @@ module chipInterface(input logic [17:0] SW,
     .sync(LoadShapeNow));
 
         //assign LoadShapeNow = 1'b1;
-        assign LEDG[1] = LoadShapeNow;
+        assign LEDG[1] = displayMasterPattern;
         assign LEDG[2] = CoinInserted;
-
-
-        BCDtoSevenSegment bcdddd(.bcd(LoadShape), .segment(HEX4));
+        logic [2:0] master0_bit_pattern, master1_bit_pattern, master2_bit_pattern, master3_bit_pattern;
+   logic correct_location_0, correct_location_1, correct_location_2, correct_location_3;
+        //BCDtoSevenSegment bcdddd(.bcd(LoadShape), .segment(HEX4));
         BCDtoSevenSegment_2bitinput bcddd(.bcd(ShapeLocation), .segment(HEX5));
         logic cannot_start;
         assign LEDG[3] = cannot_start;
-        assign LEDG[4] = en_master0;
+        assign LEDG[4] = correct_location_0;//en_master0;
         assign LEDG[5] = en_master1;
         logic GameOver;
-
+        logic loaded3, loaded2, loaded1, loaded0;
    task2 task2_module(.coinInserted(CoinInserted),
              .coinValue(CoinValue),
              .numGames_can_be_played(numGames), .RoundNumber(RoundNumber),
@@ -188,10 +208,14 @@ module chipInterface(input logic [17:0] SW,
              .GameOver,
                                  .cannot_start,
              .clock, .reset, .GradeIt,
-                                 .en_master3, .en_master2, .en_master1, .en_master0);
+                                 .en_master3, .en_master2, .en_master1, .en_master0,
+                                 .master0_bit_pattern, .master1_bit_pattern, .master2_bit_pattern, .master3_bit_pattern,
+                                 .correct_location_0, .correct_location_1, .correct_location_2, .correct_location_3);
 
+
+BCDtoSevenSegment_3bitinput threebit(.bcd(master0_bit_pattern),
+.segment(HEX4));
 endmodule: chipInterface
 
 
 //Here
-

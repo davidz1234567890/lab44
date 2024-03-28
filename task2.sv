@@ -758,11 +758,11 @@ module task2(input logic coinInserted,
     assign game_can_start = numGames_lt_seven && startGame && ~cannot_start
                             && (numGames_can_be_played > 0);
     logic counter_enable;
-    assign counter_enable = (numGames_lt_seven && game_paid_for) || game_can_start;
+    assign counter_enable = (numGames_lt_seven && game_paid_for) || (game_can_start &&  startGame);
     Counter #(4) games_payed_counter(.en(counter_enable),
                       .clear(1'b0),
                       .load(reset),
-                      .up(game_paid_for),
+                      .up(game_paid_for),  //used to be game_paid_for
                       .D(4'd0),
                       .clock,
                       .Q(numGames_can_be_played));
@@ -1109,7 +1109,28 @@ task2 DUTT(.*);
     ShapeLocation <= 2'b10; //Master is IZDT
     @(posedge clock);
     startGame <= 1;
-    @(posedge clock);/*
+    @(posedge clock);
+
+
+         @(posedge clock);
+         @(posedge clock);
+         @(posedge clock);
+         @(posedge clock);
+         @(posedge clock);
+
+
+
+
+
+
+
+
+
+
+
+
+
+         /*
     startGame <= 0;
     @(posedge clock);
     GradeIt <= 1;

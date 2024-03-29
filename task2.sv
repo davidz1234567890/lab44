@@ -1,3 +1,4 @@
+
 `default_nettype none
 
 
@@ -624,7 +625,87 @@ module loading_master_fsm3(input logic correct_location,
 
 endmodule: loading_master_fsm3
 
+module game_counter_fsm(input logic game_can_start,
+                        input logic numGames_lt_seven,
+                                                                input logic numGames_eq_0,
+                        input logic game_paid_for,
+                                                                output logic counter_enable,
+                                                                output logic up,
+                                                                input logic reset, input logic clock);
+                enum logic [1:0] {nothing = 2'd0, paid_game = 2'd1, in_game = 2'd2} currState, nextState;
+                always_comb begin
+        unique casez (currState)
+            nothing: begin
+                if (game_paid_for && ~game_can_start && numGames_lt_seven) begin
+                                           up = 1'b1;
+                                                counter_enable = 1'b1;
+                                           nextState = paid_game;
+                                         end
+                                         else if (~game_paid_for && game_can_start && ~numGames_eq_0) begin
+                                           up = 1'b0;
+                                                counter_enable = 1'b1;
+                                           nextState = in_game;
 
+                                         end
+                                         else if (~game_paid_for && ~game_can_start) begin
+
+                                           up = 1'b0;
+                                                counter_enable = 1'b0;
+                                           nextState = nothing;
+                                                end
+                                    else begin
+
+                                           up = 1'b0;
+                                                counter_enable = 1'b0;
+                                                nextState = nothing;
+                                         end
+
+            end
+
+                                paid_game: begin
+                if (game_paid_for) begin
+                                           up = 1'b1;
+                                                counter_enable = 1'b0;
+                                                nextState = paid_game;
+                                                end
+                                    else begin
+
+                                           up = 1'b1;
+                                                counter_enable = 1'b0;
+                                                nextState = nothing;
+                                         end
+            end
+
+            in_game: begin
+                if (game_can_start) begin
+                                           up = 1'b0;
+                                                counter_enable = 1'b0;
+                                                nextState = in_game;
+                                                end
+                                    else begin
+
+                                           up = 1'b0;
+                                                counter_enable = 1'b0;
+                                                nextState = nothing;
+                                         end
+            end
+            /*default: begin
+                                  nextState = nothing;
+                                  up = 1'b0;
+                                  counter_enable = 1'b0;
+
+
+                                end*/
+        endcase
+    end
+
+    always_ff @(posedge clock, posedge reset)
+        if(reset)
+            currState <= nothing;
+        else
+            currState <= nextState;
+
+endmodule: game_counter_fsm
 
 
 
@@ -709,13 +790,16 @@ module task2(input logic coinInserted,
              output logic [3:0] numGames_can_be_played, RoundNumber,
              input logic startGame,
              output logic loadNumGames,
-             output logic loadGuess,
+                                 output logic [3:0] Znarly, Zood,
+             //output logic loadGuess,
              output logic [11:0] MasterPattern, //ask in oh
              input logic [11:0] GuessPattern,
              input logic [2:0] LoadShape,
+                                 //output logic clearGame,
              input logic [1:0] ShapeLocation,
              input logic LoadShapeNow,
              output logic GameWon,
+                                 output logic game_can_start,
              output logic GameOver,
                                  output logic cannot_start,
              input logic clock, reset, GradeIt,
@@ -728,23 +812,22 @@ module task2(input logic coinInserted,
     logic game_paid_for;
     task5 task5_dut(.credit,.drop(game_paid_for),.coinInserted,
     .coin(coinValue),.clock, .reset);
-    logic [3:0] numGames; logic can_add_1;
+
 
     logic AltB, numGames_eq_0, AgtB;
 
-    Counter #(4) game_counter(.en((game_paid_for && ~numGames_eq_0) || can_add_1),
+   /* Counter #(4) game_counter(.en((game_paid_for && ~numGames_eq_0) || can_add_1),
                       .clear(1'b0),
                       .load(reset), //numGames_eq_0),
                       //resets to seven available games
                       .up(can_add_1),//1'b0),
                       .D(4'd7),
                       .clock,
-                      .Q(numGames));
+                      .Q(numGames));*/
     //add comment
 
-    assign can_add_1 = (numGames + numGames_can_be_played) < 4'd7;
-    MagComp #(4) check_available_games_gt_0(.A(numGames), .B(4'd0),
-                                   .AltB, .AeqB(numGames_eq_0), .AgtB);
+
+
 
     logic numGames_lt_seven, AeqB_second_comparator, AgtB_second_comparator;
     MagComp #(4) check_available_games_lt_seven(.A(numGames_can_be_played), .B(4'd7),
@@ -754,15 +837,20 @@ module task2(input logic coinInserted,
 
     //ask about paying for up to seven available games
 
-    logic game_can_start;// cannot_start;
-    assign game_can_start = numGames_lt_seven && startGame && ~cannot_start
+    //logic game_can_start;// cannot_start;
+    assign game_can_start = startGame && ~cannot_start
                             && (numGames_can_be_played > 0);
-    logic counter_enable;
-    assign counter_enable = (numGames_lt_seven && game_paid_for) || (game_can_start &&  startGame);
+    logic counter_enable; logic up;
+    //assign counter_enable = (numGames_lt_seven && game_paid_for) || (game_can_start &&  startGame);
+         game_counter_fsm game_payed_counter_fsm(.game_can_start,
+                        .game_paid_for, .numGames_lt_seven, .numGames_eq_0,
+                                                                .counter_enable,
+                                                                .up,
+                                                                .reset, .clock);
     Counter #(4) games_payed_counter(.en(counter_enable),
                       .clear(1'b0),
                       .load(reset),
-                      .up(game_paid_for),  //used to be game_paid_for
+                      .up(up),  //used to be game_paid_for
                       .D(4'd0),
                       .clock,
                       .Q(numGames_can_be_played));
@@ -778,8 +866,9 @@ module task2(input logic coinInserted,
                       .clock,
                       .Q(RoundNumber));
 
-    logic [3:0] Znarly, Zood;
+
     Comparator #(4) determine_if_win(.A(Znarly), .B(4'd4), .AeqB(GameWon));
+         //assign clearGame = GameWon;
     /*Comparator #(4) determine_end_game(.A(RoundNumber), .B(4'd8),
                                        .AeqB(GameOver));*/
         //assign GameOver = ( ~cannot_start  && RoundNumber < 4'd8) ? 0 : 1;
@@ -975,7 +1064,7 @@ module task2(input logic coinInserted,
                                   .clock,
                                   .reset,
                                   .Znarly,
-                                  .Zood, .load(loadGuess));
+                                  .Zood);
 
 
     game_control_fsm game_control(.win(GameWon),
@@ -995,12 +1084,15 @@ logic [3:0] numGames_can_be_played, RoundNumber;  //output
 logic startGame; //input
 //logic loadGuess;//input
 logic cannot_start;
+logic [3:0] Znarly, Zood;
 logic [11:0] GuessPattern, MasterPattern;//input
 logic [2:0] LoadShape; //input
 logic [1:0] ShapeLocation; //input
 logic LoadShapeNow; //input
 logic loadNumGames, loadGuess;
 logic GameWon;//output
+//logic clearGame;
+logic game_can_start;
 logic GameOver;//output
 logic clock, reset, GradeIt; //input
 logic loaded3, loaded2, loaded1, loaded0;
@@ -1031,7 +1123,7 @@ task2 DUTT(.*);
 
     initial begin
     GuessPattern <= 12'b001_001_010_010; //test case TTCC
-
+   // MasterPattern <= 12'b101_110_100_001;
     LoadShapeNow <= 1'b1;
     reset <= 1;
     GradeIt <= 0;
@@ -1130,7 +1222,7 @@ task2 DUTT(.*);
 
 
 
-         /*
+
     startGame <= 0;
     @(posedge clock);
     GradeIt <= 1;
@@ -1150,7 +1242,7 @@ task2 DUTT(.*);
     @(posedge clock);
     @(posedge clock);
     //Guess is O O D D below
-    GuessPattern <= 12'b011_011_100_100;
+    GuessPattern <= 12'b001_001_001_001;
     @(posedge clock);
     GradeIt <= 1;
     @(posedge clock);
@@ -1371,7 +1463,7 @@ task2 DUTT(.*);
     @(posedge clock);
     GradeIt <= 0;
     @(posedge clock);
-    @(posedge clock);*/
+    @(posedge clock);
 
 
     $finish;

@@ -55,54 +55,67 @@ output logic [6:0] segment);
 
     endcase
 endmodule: BCDtoSevenSegment_3bitinput
-
+/*
 module key3_fsm(input logic game_over, game_can_start,
-                output logic sel, output logic loadGuess,
+                output logic sel, //output logic loadGuess,
                                          input logic clock, reset);
-        enum logic {nothing = 1'b0, can_press = 1'b1} currState, nextState;
+        enum logic [1:0] {nothing = 2'd0, state1 = 2'd1, can_press = 2'd2, state2 = 2'd3} currState, nextState;
         always_comb begin
      unique case(currState)
             nothing: begin
-                   if(~game_over && game_can_start) begin
+                   if(game_can_start) begin
                           sel = 1'b0;
-                           nextState = can_press;
-                          loadGuess = 1'b0;
+                           nextState = state1;
+                          //loadGuess = 1'b0;
 
 
                         end
-                        else if(game_over && ~game_can_start) begin
+                        else if(~game_can_start) begin
                           sel = 1'b0;
                      nextState = nothing;
-                          loadGuess = 1'b0;
+                          //loadGuess = 1'b0;
 
                         end
                         else begin
                           sel = 1'b0;
                      nextState = nothing;
-                          loadGuess = 1'b0;
+                          //loadGuess = 1'b0;
 
                         end
 
 
                  end
+                 state1: begin
+                   nextState = can_press;
+                        //loadGuess = 1'b1;
+                        sel = 1'b1;
+                 end
             can_press: begin
                    if(~game_over) begin
                           sel = 1'b1;
                           nextState = can_press;
-                          loadGuess = 1'b1;
+                          //loadGuess = 1'b1;
 
                         end
                         else if(game_over) begin
-                          sel = 1'b0;
-                     nextState = nothing;
-                          loadGuess = 1'b0;
+                          sel = 1'b1;
+                     nextState = state2;
+                          //loadGuess = 1'b1;
 
                         end
                         else begin
-                          sel = 1'b0;
-                          nextState = nothing;
-                          loadGuess = 1'b0;
+                          sel = 1'b1;
+                          nextState = can_press;
+                          //loadGuess = 1'b1;
                         end
+
+                 end
+                 state2: begin
+                   nextState = nothing;
+                        sel = 1'b0;
+                        //loadGuess = 1'b0;
+
+
 
                  end
 
@@ -120,7 +133,7 @@ always_ff @(posedge clock, posedge reset)
             currState <= nextState;
 
 endmodule: key3_fsm
-
+*/
 
 module chipInterface(input logic [17:0] SW,
                      output logic [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7,
@@ -153,8 +166,8 @@ module chipInterface(input logic [17:0] SW,
    logic displayMasterPattern;
    logic en_master3, en_master2, en_master1, en_master0;
 
-   assign displayMasterPattern = 1'b1;
-
+   assign displayMasterPattern = SW[15];
+        //assign loadZnarlyZood = 1'b1;
    mastermindVGA vga(.CLOCK_50(CLOCK_50),
              .VGA_R(VGA_R), .VGA_G(VGA_G), .VGA_B(VGA_B),
              .VGA_BLANK_N(VGA_BLANK_N), .VGA_CLK(VGA_CLK), .VGA_SYNC_N(VGA_SYNC_N),
@@ -212,7 +225,7 @@ module chipInterface(input logic [17:0] SW,
 
         logic game_can_start;
         assign LEDG[6] = en_master0;
-        assign LEDG[7] = en_master3;
+        assign LEDG[7] = clearGame;
         logic key0_not, key1_not, key2_not, key3_not;
         assign key0_not = ~KEY[0];
         assign key1_not = ~KEY[1];
@@ -234,10 +247,10 @@ module chipInterface(input logic [17:0] SW,
     .sync(intermediate_key3));
 
                 logic GameOver; logic sel;
-         key3_fsm key3_selector(.game_over(GameOver), .game_can_start, .loadGuess,
+         /*key3_fsm key3_selector(.game_over(GameOver), .game_can_start, //.loadGuess,
                 .sel, .reset, .clock);
 
-
+*/
          always_comb begin
           if ((sel)) begin // && (numGames > 4'd0)) begin
             GradeIt = intermediate_key3;
@@ -249,12 +262,12 @@ module chipInterface(input logic [17:0] SW,
            end
 
         end
-           assign loadZnarlyZood = GradeIt;
+           //assign loadZnarlyZood = GradeIt;
 
-         assign clearGame = SW[14];
+         //assign clearGame = SW[14];
         //assign LoadShapeNow = 1'b1;
         assign LEDG[1] = displayMasterPattern;
-        assign LEDG[2] = CoinInserted;
+        assign LEDG[2] = loadGuess;
         logic [2:0] master0_bit_pattern, master1_bit_pattern, master2_bit_pattern, master3_bit_pattern;
    logic correct_location_0, correct_location_1, correct_location_2, correct_location_3;
         //BCDtoSevenSegment bcdddd(.bcd(LoadShape), .segment(HEX4));
@@ -263,7 +276,8 @@ module chipInterface(input logic [17:0] SW,
         assign LEDG[3] = GradeIt;
         assign LEDG[4] = LoadShapeNow;//en_master0;
         assign LEDG[5] = loadZnarlyZood;
-
+BCDtoSevenSegment_2bitinput eighth_bcd(.bcd(CoinValue),
+.segment(HEX7));
         logic loaded3, loaded2, loaded1, loaded0;
    task2 task2_module(.coinInserted(CoinInserted),
              .coinValue(CoinValue),
@@ -271,7 +285,10 @@ module chipInterface(input logic [17:0] SW,
              .startGame(StartGame),
              .loadNumGames,
                                  .game_can_start,
-             //.loadGuess,
+             .loadGuess,
+                                 //.displayMasterPattern,
+                                 .sel,
+                                 .loadZnarlyZood,
              .MasterPattern,
              .GuessPattern(Guess),
              .LoadShape,
@@ -279,7 +296,7 @@ module chipInterface(input logic [17:0] SW,
              .ShapeLocation(ShapeLocation),
              .LoadShapeNow,
              .GameWon,
-                                 //.clearGame,
+                                 .clearGame,
              .GameOver,
                                  .cannot_start,
              .clock, .reset, .GradeIt,
@@ -294,4 +311,4 @@ endmodule: chipInterface
 
 
 //Here
-
+//random comment here

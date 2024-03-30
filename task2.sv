@@ -1,4 +1,3 @@
-
 `default_nettype none
 
 
@@ -461,22 +460,24 @@ always_ff @(posedge clock)
     currState <= nextState;
 endmodule: task5
 
-module loading_master_fsm0(input logic correct_location,
+module loading_master_fsm(input logic correct_location,
                           input logic LoadShapeNow,
                                                                   input logic [1:0] ShapeLocation,
+                                                                  input logic [1:0] pattern_to_match,
                           input logic win,
+                                                                  input logic startGame,
                           input logic endgame,
                           output logic enable, clear,
                           input logic reset, clock);
-    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
+    enum logic [1:0] {nothing = 2'd0, set = 2'd1, waitt = 2'd2} currState, nextState;
 
 
     always_comb begin
         case(currState)
             nothing: begin
-                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? set : nothing;
-                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? 1'b1 : 1'b0;
-                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd0) ? 1'b0 : 1'b1;
+                nextState = (correct_location && LoadShapeNow && ShapeLocation == pattern_to_match) ? set : nothing;
+                enable = (correct_location && LoadShapeNow && ShapeLocation == pattern_to_match) ? 1'b1 : 1'b0;
+                clear = (correct_location && LoadShapeNow && ShapeLocation == pattern_to_match) ? 1'b0 : 1'b1;
             end
 
                                 /*intermediate: begin
@@ -486,9 +487,54 @@ module loading_master_fsm0(input logic correct_location,
             end*/
 
             set: begin
-                nextState = (win | endgame) ? nothing : set;
+                nextState = (win | endgame) ? waitt : set;
                 enable = 1'b0; //changed from 0 to 1 for debugging purposes
-                clear = (win | endgame) ? 1'b1 : 1'b0;
+                clear = 1'b0;//(win | endgame) ? 1'b1 : 1'b0;
+            end
+
+                                waitt: begin
+                                   nextState = (startGame) ? nothing : waitt;
+                                        enable =  1'b0;
+                                        clear = (startGame)  ? 1'b1 : 1'b0;
+
+
+                                end
+
+        endcase
+    end
+
+    always_ff @(posedge clock, posedge reset)
+        if(reset)
+            currState <= nothing;
+        else
+            currState <= nextState;
+
+endmodule: loading_master_fsm
+
+
+
+
+
+
+module fsm_for_game_over(input logic game_can_start,
+                         input logic used_all_rounds,
+                                                                 output logic game_over,
+                                                                 input logic clock, reset);
+    enum logic {nothing = 1'b0, clear_game_state = 1'b1} currState, nextState;
+
+
+    always_comb begin
+        case(currState)
+            nothing: begin
+                nextState = (game_can_start) ? clear_game_state : nothing;
+                game_over = 1'b0;
+
+            end
+
+
+            clear_game_state: begin
+                nextState = (used_all_rounds) ? nothing : clear_game_state;
+                game_over = (used_all_rounds) ? 1'b1 : 1'b0;
             end
 
         endcase
@@ -500,130 +546,18 @@ module loading_master_fsm0(input logic correct_location,
         else
             currState <= nextState;
 
-endmodule: loading_master_fsm0
 
-module loading_master_fsm1(input logic correct_location,
-                          input logic LoadShapeNow,
-                                                                  input logic [1:0] ShapeLocation,
-                          input logic win,
-                          input logic endgame,
-                          output logic enable, clear,
-                          input logic reset, clock);
-    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
+endmodule: fsm_for_game_over
 
 
-    always_comb begin
-        case(currState)
-            nothing: begin
-                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? set : nothing;
-                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? 1'b1 : 1'b0;
-                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd1) ? 1'b0 : 1'b1;
-            end
-
-                                /*intermediate: begin
-                nextState = set;
-                enable = 1'b1;
-                clear = 1'b0;
-            end*/
-
-            set: begin
-                nextState = (win | endgame) ? nothing : set;
-                enable = 1'b0; //changed from 0 to 1 for debugging purposes
-                clear = (win | endgame) ? 1'b1 : 1'b0;
-            end
-
-        endcase
-    end
-
-    always_ff @(posedge clock, posedge reset)
-        if(reset)
-            currState <= nothing;
-        else
-            currState <= nextState;
-
-endmodule: loading_master_fsm1
-
-module loading_master_fsm2(input logic correct_location,
-                          input logic LoadShapeNow,
-                                                                  input logic [1:0] ShapeLocation,
-                          input logic win,
-                          input logic endgame,
-                          output logic enable, clear,
-                          input logic reset, clock);
-    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
 
 
-    always_comb begin
-        case(currState)
-            nothing: begin
-                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? set : nothing;
-                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? 1'b1 : 1'b0;
-                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd2) ? 1'b0 : 1'b1;
-            end
-
-                                /*intermediate: begin
-                nextState = set;
-                enable = 1'b1;
-                clear = 1'b0;
-            end*/
-
-            set: begin
-                nextState = (win | endgame) ? nothing : set;
-                enable = 1'b0; //changed from 0 to 1 for debugging purposes
-                clear = (win | endgame) ? 1'b1 : 1'b0;
-            end
-
-        endcase
-    end
-
-    always_ff @(posedge clock, posedge reset)
-        if(reset)
-            currState <= nothing;
-        else
-            currState <= nextState;
-
-endmodule: loading_master_fsm2
-
-module loading_master_fsm3(input logic correct_location,
-                          input logic LoadShapeNow,
-                                                                  input logic [1:0] ShapeLocation,
-                          input logic win,
-                          input logic endgame,
-                          output logic enable, clear,
-                          input logic reset, clock);
-    enum logic {nothing = 1'b0, set = 1'b1} currState, nextState;
 
 
-    always_comb begin
-        case(currState)
-            nothing: begin
-                nextState = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? set : nothing;
-                enable = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? 1'b1 : 1'b0;
-                clear = (correct_location && LoadShapeNow && ShapeLocation == 2'd3) ? 1'b0 : 1'b1;
-            end
 
-                                /*intermediate: begin
-                nextState = set;
-                enable = 1'b1;
-                clear = 1'b0;
-            end*/
 
-            set: begin
-                nextState = (win | endgame) ? nothing : set;
-                enable = 1'b0; //changed from 0 to 1 for debugging purposes
-                clear = (win | endgame) ? 1'b1 : 1'b0;
-            end
 
-        endcase
-    end
 
-    always_ff @(posedge clock, posedge reset)
-        if(reset)
-            currState <= nothing;
-        else
-            currState <= nextState;
-
-endmodule: loading_master_fsm3
 
 module game_counter_fsm(input logic game_can_start,
                         input logic numGames_lt_seven,
@@ -715,62 +649,207 @@ endmodule: game_counter_fsm
 module game_control_fsm(input logic win,
                         input logic end_game,
                         input logic gradeit,
+                                                                input logic startGame,
                         input logic game_can_start,
                         output logic round_enable,
+                                                                output logic clearGame,
+                                                                output logic displayMasterPattern,
+                                                                output logic clearMaster,
+                                                                output logic loadGuess,
+                                                                output logic loadZnarlyZood,
+                                                                output logic sel,
                         output logic round_clear,
                         input logic clock, reset);
-enum logic [1:0] {nothing = 2'b00, play = 2'b01, waitt = 2'b10}
-                                                  currState, nextState;
+enum logic [2:0] {nothing = 3'b00, play = 3'b01, waitt = 3'b10, beforenext = 3'd3, state2 = 3'd4, state_just_won_or_end = 3'd5,
+                   startGame_wait = 3'd6, startGamefirst_wait = 3'd7}
+                                                  currState, nextState; //displayMaster signals are all negated incorrectly
 always_comb begin
     case(currState)
       nothing: begin
         nextState = (game_can_start) ? play : nothing;
         round_enable = 1'b0; //increments the round count
         //ask in oh what if gradeit is asserted at the same time as game_start
+                  sel = 1'b0;
+                  displayMasterPattern = 1'b0;
+                  clearMaster = 1'b0;
+                  loadZnarlyZood = (game_can_start) ? 1'b1 : 1'b0;//1'b0;
         round_clear = (game_can_start) ? 1'b1 : 1'b0;
+                  clearGame = (game_can_start) ? 1'b1 : 1'b0;
+                  loadGuess = (game_can_start) ? 1'b1 : 1'b0;
       end
 
       play: begin
-        if(end_game | win) begin
-          nextState = nothing;
+        displayMasterPattern = 1'b0;
+                  clearMaster = 1'b0;
+                  if((end_game | win)) begin
+          nextState = state_just_won_or_end;
           round_enable = 1'b0;
           round_clear = 1'b0;
+          clearGame = 1'b0;
+                         loadZnarlyZood = 1'b1;
+                         loadGuess = 1'b0;
+                         sel = 1'b1; //used to be 1'b0
 
         end
         else if (~end_game && ~win && gradeit) begin
           nextState = play;
-          round_enable = 1'b0;
+          round_enable = 1'b0; //enable the counter
           round_clear = 1'b0;
-
+          clearGame = 1'b0;
+                         sel = 1'b1;
+                         loadZnarlyZood = 1'b1;
+                         loadGuess = 1'b1;
         end
         else begin //here ~end_game && ~win && ~gradeit
           nextState = waitt;
-          round_enable = 1'b0;
+          round_enable = 1'b0; //don't enable the counter
           round_clear = 1'b0;
+                         clearGame = 1'b0;
+                         sel = 1'b1;
+                         loadGuess = 1'b1;
+                         loadZnarlyZood = 1'b1;
         end
 
       end
 
       waitt: begin
-        if(end_game | win) begin
-          nextState = nothing;
+        displayMasterPattern = 1'b0;
+                  clearMaster = 1'b0;
+                  if((end_game | win)) begin
+          nextState = state_just_won_or_end;
           round_enable = 1'b0;
           round_clear = 1'b0;
-
+          clearGame = 1'b0;
+                         sel = 1'b1; //used to be 1'b0
+                         loadZnarlyZood = 1'b1;
+                         loadGuess = 1'b0;
         end
         else if (~end_game && ~win && gradeit) begin
           nextState = play;
-          round_enable = 1'b1;
+          round_enable = 1'b1; //enable the counter
           round_clear = 1'b0;
-
+          clearGame = 1'b0;
+                         sel = 1'b1;
+                         loadGuess = 1'b1;
+                         loadZnarlyZood = 1'b1;
         end
-        else begin //here ~RoundNumber && ~win && ~gradeit
+        else begin //here ~end_game && ~win && ~gradeit
           nextState = waitt;
           round_enable = 1'b0;
           round_clear = 1'b0;
+                         clearGame = 1'b0;
+                         sel = 1'b1;
+                         loadGuess = 1'b1;
+                         loadZnarlyZood = 1'b1;
         end
 
       end
+                state_just_won_or_end: begin
+                  displayMasterPattern = 1'b0;
+                  clearMaster = 1'b0;
+                  if(gradeit) begin
+                    nextState = state_just_won_or_end;
+          round_enable = 1'b0;
+          round_clear = 1'b0;
+          clearGame = 1'b0;
+                         sel = 1'b1; //used to be 1'b0
+                         loadZnarlyZood = 1'b1;
+                         loadGuess = 1'b0;
+                  end
+                  else begin
+                    nextState = beforenext;
+          round_enable = 1'b0;
+          round_clear = 1'b0;
+          clearGame = 1'b0;
+                         sel = 1'b1; //used to be 1'b0
+                         loadZnarlyZood = 1'b1;
+                         loadGuess = 1'b0;
+                  end
+                end
+
+                beforenext: begin
+                  //loadZnarlyZood = (~startGame) ? 1'b1 : 1'b0;
+                  if(startGame) begin
+                    nextState = startGamefirst_wait;
+                         round_enable = 1'b0; //don't enable the round counter
+                         sel = 1'b0; //select loadshapenow
+                         round_clear = 1'b0; //don't clear the round counter
+                         clearGame = 1'b1;
+                         clearMaster = 1'b1;
+                         loadZnarlyZood = 1'b0;
+                         displayMasterPattern = 1'b1;
+                         loadGuess = 1'b0;
+                  end
+                  else begin
+                    nextState = beforenext;
+                         round_enable = 1'b0;
+                         sel = 1'b1; //changed from 0 to 1
+                         round_clear = 1'b0;
+                         clearGame = 1'b0;
+                         clearMaster = 1'b1;
+                         displayMasterPattern = 1'b0;
+                         loadGuess = 1'b0;
+                         loadZnarlyZood = 1'b0;
+                  end
+                end
+                startGamefirst_wait: begin
+                  //loadZnarlyZood = (~startGame) ? 1'b1 : 1'b0;
+                  if(startGame) begin
+                    nextState = startGamefirst_wait;
+                         round_enable = 1'b0; //don't enable the round counter
+                         sel = 1'b0; //select loadshapenow
+                         round_clear = 1'b0; //don't clear the round counter
+                         clearGame = 1'b1;
+                         clearMaster = 1'b1;
+                         loadZnarlyZood = 1'b0;
+                         displayMasterPattern = 1'b1;
+                         loadGuess = 1'b0;
+                  end
+                  else begin
+                    nextState = state2;
+                         round_enable = 1'b0;
+                         sel = 1'b0; //changed from 0 to 1
+                         round_clear = 1'b0;
+                         clearGame = 1'b0;
+                         clearMaster = 1'b1;
+                         displayMasterPattern = 1'b0;
+                         loadGuess = 1'b0;
+                         loadZnarlyZood = 1'b0;
+                  end
+                end
+                state2: begin
+                   loadZnarlyZood = 1'b0;
+                    nextState = (game_can_start) ? startGame_wait : state2;
+          round_enable = 1'b0; //do not increment the round count
+        //ask in oh what if gradeit is asserted at the same time as game_start
+                    sel = 1'b0;
+                         displayMasterPattern = 1'b0;//(game_can_start) ? 1'b1 : 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+          round_clear = 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+                    clearGame = 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+                         clearMaster = 1'b0; //don't clear after starting the game
+                    loadGuess = 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+                end
+                startGame_wait: begin
+                    loadZnarlyZood = (startGame) ? 1'b1 : 1'b0;
+                    nextState = (startGame) ? play : startGame_wait;
+          round_enable = 1'b0; //increments the round count
+        //ask in oh what if gradeit is asserted at the same time as game_start
+                    sel = 1'b0;
+                         displayMasterPattern = 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+          round_clear = (startGame) ? 1'b1: 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+                    clearGame = (startGame) ? 1'b1 : 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+                         clearMaster = 1'b0; //don't clear after starting the game
+                    loadGuess = (startGame) ? 1'b1 : 1'b0;//(game_can_start) ? 1'b1 : 1'b0;
+
+
+                 //displayMasterPattern = 1'b1;
+                  //clearMaster = 1'b0;
+                  //loadZnarlyZood = (game_can_start) ? 1'b1 : 1'b0;//1'b0;
+        //round_clear = (game_can_start) ? 1'b1 : 1'b0;
+                  //clearGame = (game_can_start) ? 1'b1 : 1'b0;
+                  //loadGuess = (game_can_start) ? 1'b1 : 1'b0;
+
+                end
     endcase
 end
 always_ff @(posedge clock, posedge reset)
@@ -791,14 +870,17 @@ module task2(input logic coinInserted,
              input logic startGame,
              output logic loadNumGames,
                                  output logic [3:0] Znarly, Zood,
-             //output logic loadGuess,
+             output logic loadGuess,
+                                 output logic sel,
+                                 output logic loadZnarlyZood,
              output logic [11:0] MasterPattern, //ask in oh
              input logic [11:0] GuessPattern,
              input logic [2:0] LoadShape,
-                                 //output logic clearGame,
+                                 output logic clearGame,
              input logic [1:0] ShapeLocation,
              input logic LoadShapeNow,
              output logic GameWon,
+                                 output logic displayMasterPattern,
                                  output logic game_can_start,
              output logic GameOver,
                                  output logic cannot_start,
@@ -816,15 +898,7 @@ module task2(input logic coinInserted,
 
     logic AltB, numGames_eq_0, AgtB;
 
-   /* Counter #(4) game_counter(.en((game_paid_for && ~numGames_eq_0) || can_add_1),
-                      .clear(1'b0),
-                      .load(reset), //numGames_eq_0),
-                      //resets to seven available games
-                      .up(can_add_1),//1'b0),
-                      .D(4'd7),
-                      .clock,
-                      .Q(numGames));*/
-    //add comment
+
 
 
 
@@ -867,44 +941,36 @@ module task2(input logic coinInserted,
                       .Q(RoundNumber));
 
 
-    Comparator #(4) determine_if_win(.A(Znarly), .B(4'd4), .AeqB(GameWon));
-         //assign clearGame = GameWon;
-    /*Comparator #(4) determine_end_game(.A(RoundNumber), .B(4'd8),
-                                       .AeqB(GameOver));*/
-        //assign GameOver = ( ~cannot_start  && RoundNumber < 4'd8) ? 0 : 1;
-        always_comb begin
-          if(~game_can_start) begin
-            GameOver = 1'b0;
-          end
-          else begin
-            GameOver = (RoundNumber < 4'd8) ? 0 : 1;
-          end
-        end
+         assign GameWon = (Znarly == 4'd4) && ~game_can_start;
 
+        fsm_for_game_over game_over_fsm(.game_can_start,
+                         .used_all_rounds(RoundNumber == 4'd8),
+                                                                 .game_over(GameOver), .clock, .reset);
+                 logic clearMaster;
 
     //loading in master
     logic clear_master3;
     //logic [2:0] master3_bit_pattern;
     Register #(3) load_master3(.D(LoadShape), .en(en_master3 && LoadShapeNow),
-                               .clear(clear_master3), .clock,
+                               .clear(clear_master3 || clearMaster), .clock,
                                .Q(master3_bit_pattern));
 
     logic clear_master2;
     //logic [2:0] master2_bit_pattern;
     Register #(3) load_master2(.D(LoadShape), .en(en_master2 && LoadShapeNow),
-                               .clear(clear_master2), .clock,
+                               .clear(clear_master2 || clearMaster), .clock,
                                .Q(master2_bit_pattern));
 
     logic clear_master1;
     //logic [2:0] master1_bit_pattern;
     Register #(3) load_master1(.D(LoadShape), .en(en_master1 && LoadShapeNow),
-                               .clear(clear_master1), .clock,
+                               .clear(clear_master1  || clearMaster), .clock,
                                .Q(master1_bit_pattern));
 
     logic clear_master0;
     //logic [2:0] master0_bit_pattern;
     Register #(3) load_master0(.D(LoadShape), .en(en_master0 && LoadShapeNow),
-                                .clear(clear_master0), .clock,
+                                .clear(clear_master0  || clearMaster), .clock,
                                .Q(master0_bit_pattern));
 
     //logic loaded3, loaded2, loaded1, loaded0;
@@ -1002,43 +1068,51 @@ module task2(input logic coinInserted,
 
 
 
-    loading_master_fsm3 master_3(.correct_location(correct_location_3),
+    loading_master_fsm master_3(.correct_location(correct_location_3),
          .LoadShapeNow,
                                                                    .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
+                                                                  .startGame,
                           .enable(en_master3),
                           .clear(clear_master3),
+                                                                  .pattern_to_match(2'd3),
                           .reset,
                           .clock);
 
-    loading_master_fsm2 master_2(.correct_location(correct_location_2),
+    loading_master_fsm master_2(.correct_location(correct_location_2),
          .LoadShapeNow,
                                                                    .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
+                                                                  .startGame,
                           .enable(en_master2),
                           .clear(clear_master2),
+                                                                  .pattern_to_match(2'd2),
                           .reset,
                           .clock);
 
 
-    loading_master_fsm1 master_1(.correct_location(correct_location_1),
+    loading_master_fsm master_1(.correct_location(correct_location_1),
          .LoadShapeNow,
                                                                    .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
+                                                                  .startGame,
                           .enable(en_master1),
                           .clear(clear_master1),
+                                                                  .pattern_to_match(2'd1),
                           .reset,
                           .clock);
 
-    loading_master_fsm0 master_0(.correct_location(correct_location_0),
+    loading_master_fsm master_0(.correct_location(correct_location_0),
          .LoadShapeNow,
                                                                    .ShapeLocation,
                           .win(GameWon),
                           .endgame(GameOver),
                           .enable(en_master0),
+                                                                  .startGame,
+                                                                  .pattern_to_match(2'd0),
                           .clear(clear_master0),
                           .reset,
                           .clock);
@@ -1066,12 +1140,19 @@ module task2(input logic coinInserted,
                                   .Znarly,
                                   .Zood);
 
-
+    //logic loadZnarlyZood;
     game_control_fsm game_control(.win(GameWon),
                      .end_game(GameOver),
                      .gradeit(GradeIt),
+                                                        .loadGuess,
+                                                        .startGame,
+                                                        .loadZnarlyZood,
+                                                        .clearMaster(clearMaster),
+                                                        .sel,
+                                                        .displayMasterPattern,
                      .game_can_start(game_can_start),
                      .round_enable(Round_en),
+                                                        .clearGame,
                      .round_clear(Round_cl),
                      .clock,
                      .reset);
@@ -1085,6 +1166,8 @@ logic startGame; //input
 //logic loadGuess;//input
 logic cannot_start;
 logic [3:0] Znarly, Zood;
+logic loadZnarlyZood;
+logic displayMasterPattern;
 logic [11:0] GuessPattern, MasterPattern;//input
 logic [2:0] LoadShape; //input
 logic [1:0] ShapeLocation; //input
@@ -1092,7 +1175,9 @@ logic LoadShapeNow; //input
 logic loadNumGames, loadGuess;
 logic GameWon;//output
 //logic clearGame;
+logic clearGame;
 logic game_can_start;
+logic sel;
 logic GameOver;//output
 logic clock, reset, GradeIt; //input
 logic loaded3, loaded2, loaded1, loaded0;
@@ -1185,19 +1270,19 @@ task2 DUTT(.*);
     @(posedge clock);
     startGame <= 1;
     @(posedge clock);
-    LoadShape <= 3'b001;
+    LoadShape <= 3'b100;
     ShapeLocation <= 2'b01;
     @(posedge clock);
 
     coinValue <= 2'b00;
     startGame <= 1;
     @(posedge clock);
-    LoadShape <= 3'b001;
+    LoadShape <= 3'b101;
     ShapeLocation <= 2'b11;
     @(posedge clock);
     startGame <= 1;
     @(posedge clock);
-    LoadShape <= 3'b001;
+    LoadShape <= 3'b110;
     ShapeLocation <= 2'b10; //Master is IZDT
     @(posedge clock);
     startGame <= 1;
@@ -1288,6 +1373,7 @@ task2 DUTT(.*);
     GradeIt <= 0;
     @(posedge clock);
     @(posedge clock);
+
     @(posedge clock);
     //guess is IZDT
     //GuessPattern <= 12'b101_110_100_001;
@@ -1298,11 +1384,13 @@ task2 DUTT(.*);
     GradeIt <= 1;
     @(posedge clock);
     @(posedge clock);
+
     @(posedge clock);
     @(posedge clock);
     GradeIt <= 0;
     @(posedge clock);
     @(posedge clock);
+
     @(posedge clock);
 
     GuessPattern <= 12'b001_101_110_100;
@@ -1319,11 +1407,14 @@ task2 DUTT(.*);
 
     //GuessPattern <= 12'b001_101_110_100;
     //guess is IZDT
+         //startGame <= 1'b1;
     GuessPattern <= 12'b101_110_100_001;
     @(posedge clock);
     GradeIt <= 1;
+         //startGame <= 1'b1;
     @(posedge clock);
     @(posedge clock);
+         //startGame <= 1'b0;
     @(posedge clock);
     @(posedge clock);
     GradeIt <= 0;
@@ -1339,6 +1430,28 @@ task2 DUTT(.*);
     coinValue <= 2'b10;//triangle
     coinInserted <= 1'b1;
     //next game
+         @(posedge clock);
+         @(posedge clock);
+         @(posedge clock);
+         LoadShape <= 3'b001;
+    ShapeLocation <= 2'b00;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b100;
+    ShapeLocation <= 2'b01;
+    @(posedge clock);
+
+    coinValue <= 2'b00;
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b101;
+    ShapeLocation <= 2'b11;
+    @(posedge clock);
+    startGame <= 1;
+    @(posedge clock);
+    LoadShape <= 3'b110;
+    ShapeLocation <= 2'b10; //Master is IZDT
 
 
     GuessPattern <= 12'b001_001_010_010; //test case TTCC
@@ -1542,6 +1655,6 @@ end
 
 //here
 
-
+//random comment 2 here
 
 endmodule: task5_test
